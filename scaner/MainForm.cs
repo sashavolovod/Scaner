@@ -10,6 +10,7 @@ using System.Collections;
 using System.Runtime.InteropServices;
 using System.IO;
 using Npgsql;
+using System.Diagnostics;
 
 namespace scaner
 {
@@ -43,17 +44,18 @@ namespace scaner
         private void loadImagesFromDb(int orderId)
         {
             NpgsqlConnection conn = new NpgsqlConnection(connStr);
-            NpgsqlCommand command = new NpgsqlCommand("select image from images where order_id=" + orderId, conn);
+            NpgsqlCommand command = new NpgsqlCommand("select image_id, image from images where order_id=" + orderId, conn);
             conn.Open();
             try
             {
                 NpgsqlDataReader dr = command.ExecuteReader();
                 while (dr.Read())
                 {
+                    int id = (int)dr["image_id"];
                     Byte[] bytes = (Byte[])dr["image"];
                     MemoryStream ms = new MemoryStream(bytes);
                     Image img = Image.FromStream(ms);
-                    addImageToPicturebox(img);
+                    addImageToPicturebox(img, id);
                  }
             }
             finally
@@ -66,7 +68,7 @@ namespace scaner
         {
             Image image;
 
-            TabPage p = tcImeges.SelectedTab;
+            TabPage p = tcImages.SelectedTab;
             if (p == null)
                 return;
 
@@ -79,45 +81,59 @@ namespace scaner
                 MessageBox.Show("Нет изображения");
                 return;
             }
+            //Image img = Image.FromStream(ms);
+            saveImageToDb(image, orderNumber);
+            btnSaveToDb.Enabled = false;
+        }
 
+        bool saveImageToDb(Image image, int id)
+        {
+            bool result = false;
             byte[] data;
-            using(System.IO.MemoryStream stream = new System.IO.MemoryStream())
+            using (System.IO.MemoryStream stream = new System.IO.MemoryStream())
             {
                 image.Save(stream, System.Drawing.Imaging.ImageFormat.Png);
                 data = stream.ToArray();
             }
-
             MemoryStream ms = new MemoryStream(data);
-            Image img = Image.FromStream(ms);
 
             NpgsqlConnection conn = new NpgsqlConnection(connStr);
             NpgsqlCommand command = new NpgsqlCommand("insert into images(order_id, image) values(@order_id, @image)", conn);
-            command.Parameters.AddWithValue("@order_id", orderNumber);
+            command.Parameters.AddWithValue("@order_id", id);
             command.Parameters.AddWithValue("@image", data);
             conn.Open();
-
             try
             {
-                command.ExecuteNonQuery();
+                
+                int i = command.ExecuteNonQuery();
+                result = true;
+                Debug.Print(i.ToString());
+            }
+            catch(Exception)
+            {
+                result = false;
             }
             finally
             {
                 conn.Close();
             }
-            btnSaveToDb.Enabled = false;
+
+            return result;
         }
+
 
         private void addImageToPicturebox(string imagePath)
         {
-            addImageToPicturebox(Image.FromFile(imagePath));
+            if(imagePath!="")
+                addImageToPicturebox(Image.FromFile(imagePath),0);
         }
 
-        private void addImageToPicturebox(Image img)
+        private void addImageToPicturebox(Image img, int id)
         {
             TabPage page = new TabPage();
             page.AutoScroll = true;
             page.Text = "Изображение " + (imageCount+1).ToString();
-            page.Tag = "test";
+            page.Tag = id;
 
             PictureBox pic = new PictureBox();
 
@@ -125,9 +141,8 @@ namespace scaner
             pic.SizeMode = PictureBoxSizeMode.AutoSize;
             page.Controls.Add(pic);
 
-
-            tcImeges.Controls.Add(page);
-            tcImeges.SelectedTab = page;
+            tcImages.Controls.Add(page);
+            tcImages.SelectedTab = page;
 
             imageCount++;
             pic.MouseEnter += new EventHandler(pic_MouseEnter);
@@ -145,11 +160,86 @@ namespace scaner
             OpenFileDialog dialog = new OpenFileDialog();
             dialog.Filter = "Файлы изображений (*.jpg, *.jpeg, *.png) | *.jpg; *.jpeg; *.png";
             dialog.Title = "Выбор изображения";
+            dialog.Multiselect = true;
             if (dialog.ShowDialog() == DialogResult.OK)
             {
-                addImageToPicturebox(dialog.FileName);
-                btnSaveToDb.Enabled = true;
-            }   
+                if (dialog.FileNames.Length > 1)
+                {
+                    int counter = 0;
+                    for (int i = 0; i < dialog.FileNames.Length; i++)
+                    {
+                        Debug.Print(dialog.FileNames[i]);
+                        Image img = Image.FromFile(dialog.FileNames[i]);
+
+                        string filename = Path.GetFileNameWithoutExtension(dialog.FileNames[i]);
+
+                        string[] numbers = filename.Split('-');
+                        int orderId;
+                        if (Int32.TryParse(numbers[0], out orderId))
+                        {
+                            saveImageToDb(img, orderId);
+                            counter++;
+                            img.Dispose();
+                            System.IO.File.Delete(dialog.FileNames[i]);
+                        }
+                        else
+                        {
+                            MessageBox.Show("Невозможно определить номер заказа по названию файла. Файл '" + filename + "' не сохранен.",
+                                "Ошибка добавления файла",
+                                MessageBoxButtons.OK,
+                                MessageBoxIcon.Information
+                                );
+                        }
+
+                    }
+                    MessageBox.Show("В базу данных сохранено " + counter + " файлов",
+                                "Выполнено",
+                                MessageBoxButtons.OK,
+                                MessageBoxIcon.Information
+                                );
+                }
+                else
+                {
+                    addImageToPicturebox(dialog.FileName);
+                    btnSaveToDb.Enabled = true;
+                }
+            }
+        }
+
+        private void btnDeleteImage_Click(object sender, EventArgs e)
+        {
+            DialogResult dialogResult = MessageBox.Show("Удалить избражение?",
+                "Внимание", MessageBoxButtons.YesNo,
+                MessageBoxIcon.Question
+                );
+
+            if ( dialogResult == DialogResult.Yes)
+            {
+                TabPage p = tcImages.SelectedTab;
+
+                if (p == null)
+                    return;
+
+                deleteImageFromDb((int)p.Tag);
+                tcImages.Controls.Remove(p);
+
+            }
+        }
+
+        void deleteImageFromDb(int id)
+        {
+            NpgsqlConnection conn = new NpgsqlConnection(connStr);
+            NpgsqlCommand command = new NpgsqlCommand("delete from images where image_id = @image_id", conn);
+            command.Parameters.AddWithValue("@image_id", id);
+            conn.Open();
+            try
+            {
+                command.ExecuteNonQuery();
+            }
+            finally
+            {
+                conn.Close();
+            }
         }
 
         private void actAddImageFromScanner(object sender, EventArgs e)
@@ -206,7 +296,6 @@ namespace scaner
                         dibhand = (IntPtr)pics[0];
                         bmpptr = GlobalLock(dibhand);
                         pixptr = GetPixelInfo(bmpptr);
-
 
                         IntPtr img = IntPtr.Zero;
                         Guid clsid;
@@ -288,8 +377,6 @@ namespace scaner
             }
         }
 
-
-
         [DllImport("gdi32.dll", ExactSpelling = true)]
         internal static extern int SetDIBitsToDevice(IntPtr hdc, int xdst, int ydst,
                                                 int width, int height, int xsrc, int ysrc, int start, int lines,
@@ -325,7 +412,7 @@ namespace scaner
 
         private void tabPage1_MouseEnter(object sender, EventArgs e)
         {
-            tcImeges.Focus();
+            tcImages.Focus();
         }
 
         void pic_MouseUp(object sender, MouseEventArgs e)
@@ -345,12 +432,9 @@ namespace scaner
         private void MainForm_Resize(object sender, EventArgs e)
         {
 
-            TabPage p = tcImeges.SelectedTab;
+            TabPage p = tcImages.SelectedTab;
             if (p == null)
                 return;
-
-
-
 
             if (p.Controls[0] is PictureBox)
             {
@@ -370,10 +454,8 @@ namespace scaner
         {
 
             btnSaveToDb.Enabled = false;
+            btnDeleteImage.Enabled = true;
         }
-
-
-
     }
 
     [StructLayout(LayoutKind.Sequential, Pack = 2)]

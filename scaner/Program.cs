@@ -17,9 +17,9 @@ namespace scaner
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
 
-            Application.Run(new MainForm(80187));
+            // Application.Run(new MainForm(80187));
             
-            /*
+            
                         if (args.Length == 1)
                         {
                             Int32.TryParse(args[0], out orderId);
@@ -27,7 +27,7 @@ namespace scaner
                         }
                         else
                             MessageBox.Show("Программа должна быть вызвана из Texac", "Внимание", MessageBoxButtons.OK, MessageBoxIcon.Information);
-            */
+            
         }
     }
 }
