@@ -173,7 +173,7 @@ namespace scaner
 
                         string filename = Path.GetFileNameWithoutExtension(dialog.FileNames[i]);
 
-                        string[] numbers = filename.Split('-');
+                        string[] numbers = filename.Split(new char[] {'-','_'});
                         int orderId;
                         if (Int32.TryParse(numbers[0], out orderId))
                         {
