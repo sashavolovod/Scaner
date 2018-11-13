@@ -33,6 +33,7 @@
             this.btnAddFromScanner = new System.Windows.Forms.ToolStripButton();
             this.btnAddFromFile = new System.Windows.Forms.ToolStripButton();
             this.btnSaveToDb = new System.Windows.Forms.ToolStripButton();
+            this.btnPrint = new System.Windows.Forms.ToolStripButton();
             this.toolStripSeparator2 = new System.Windows.Forms.ToolStripSeparator();
             this.btnDeleteImage = new System.Windows.Forms.ToolStripButton();
             this.toolStripSeparator3 = new System.Windows.Forms.ToolStripSeparator();
@@ -153,6 +154,7 @@
             this.btnAddFromScanner,
             this.btnAddFromFile,
             this.btnSaveToDb,
+            this.btnPrint,
             this.toolStripSeparator2,
             this.btnDeleteImage,
             this.toolStripSeparator3,
@@ -198,6 +200,17 @@
             this.btnSaveToDb.Text = "Сохранить";
             this.btnSaveToDb.ToolTipText = "Сохранить изображение в файл";
             this.btnSaveToDb.Click += new System.EventHandler(this.actSaveToDb);
+            // 
+            // btnPrint
+            // 
+            this.btnPrint.Image = ((System.Drawing.Image)(resources.GetObject("btnPrint.Image")));
+            this.btnPrint.ImageScaling = System.Windows.Forms.ToolStripItemImageScaling.None;
+            this.btnPrint.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.btnPrint.Name = "btnPrint";
+            this.btnPrint.Size = new System.Drawing.Size(82, 36);
+            this.btnPrint.Text = "Печать";
+            this.btnPrint.ToolTipText = "Вывод изображения на печать";
+            this.btnPrint.Click += new System.EventHandler(this.btnPrint_Click);
             // 
             // toolStripSeparator2
             // 
@@ -305,6 +318,7 @@
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator3;
         private System.Windows.Forms.TabControl tcImages;
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator4;
+        private System.Windows.Forms.ToolStripButton btnPrint;
     }
 }
 

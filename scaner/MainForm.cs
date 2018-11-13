@@ -20,6 +20,8 @@ namespace scaner
         private string connStr = "Server=172.16.2.111;Port=5432;User Id=texac_admin;Password=123;Database=texac_db;";
         private int imageCount=0;
 
+        private string userName = System.Security.Principal.WindowsIdentity.GetCurrent().Name.ToLower();
+
 
         private bool msgfilter;
         private Twain tw;
@@ -37,6 +39,11 @@ namespace scaner
             this.orderNumber = orderNumber;
             tw = new Twain();
             tw.Init(this.Handle);
+
+            if (userName == @"win7x64\user" || userName == @"inc\volovod" || userName == @"inc\rasinc" || userName == @"inc\astapuk" || userName == @"inc\grinchik" || userName == @"inc\inc-tech14")
+                btnPrint.Enabled = true;
+            else
+                btnPrint.Enabled = false;
 
             loadImagesFromDb(orderNumber);
         }
@@ -455,6 +462,18 @@ namespace scaner
 
             btnSaveToDb.Enabled = false;
             btnDeleteImage.Enabled = true;
+        }
+
+        private void btnPrint_Click(object sender, EventArgs e)
+        {
+            TabPage p = tcImages.SelectedTab;
+
+            if (p == null)
+                return;
+
+            PictureBox pic = p.Controls[0] as PictureBox;
+            pic.Image.Save("print.png", System.Drawing.Imaging.ImageFormat.Png);
+            System.Diagnostics.Process.Start("print.png");
         }
     }
 
