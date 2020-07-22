@@ -17,7 +17,7 @@ namespace scaner
     public partial class MainForm : Form, IMessageFilter
     {
         private Int32 orderNumber;
-        private string connStr = "Server=172.16.2.111;Port=5432;User Id=texac_admin;Password=123;Database=texac_db;";
+        private string connStr = Properties.Settings.Default.connStr;
         private int imageCount=0;
 
         private string userName = System.Security.Principal.WindowsIdentity.GetCurrent().Name.ToLower();
@@ -40,7 +40,7 @@ namespace scaner
             tw = new Twain();
             tw.Init(this.Handle);
 
-            if (userName == @"win7x64\user" || userName == @"inc\volovod" || userName == @"inc\master1" || userName == @"inc\astapuk" || userName == @"inc\grinchik" || userName == @"inc\inc-tech14")
+            if (userName == @"win7x64\user" || userName == @"inc\volovod" || userName == @"inc\incmaster1" || userName == @"inc\astapuk" || userName == @"inc\grinchik" || userName == @"inc\inc-tech14")
                 btnPrint.Enabled = true;
             else
                 btnPrint.Enabled = false;
@@ -111,7 +111,6 @@ namespace scaner
             conn.Open();
             try
             {
-                
                 int i = command.ExecuteNonQuery();
                 result = true;
                 Debug.Print(i.ToString());
@@ -296,58 +295,44 @@ namespace scaner
                     }
                 case TwainCommand.TransferReady:
                     {
+
                         ArrayList pics = tw.TransferPictures();
                         EndingScan();
                         tw.CloseSrc();
 
-                        dibhand = (IntPtr)pics[0];
-                        bmpptr = GlobalLock(dibhand);
-                        pixptr = GetPixelInfo(bmpptr);
-
-                        IntPtr img = IntPtr.Zero;
-                        Guid clsid;
-                        String filename = "temp.png";
-
-                        if (!Gdip.GetCodecClsid(filename, out clsid))
-                        {
-                            return false;
-                        }
-
-                        int st = Gdip.GdipCreateBitmapFromGdiDib(bmpptr, pixptr, ref img);
-
-                        if ((st != 0) || (img == IntPtr.Zero))
-                        {
-                            return false;
-                        }
-
-                        st = Gdip.GdipSaveImageToFile(img, filename, ref clsid, IntPtr.Zero);
-                        Gdip.GdipDisposeImage(img);
-
-                        addImageToPicturebox(filename);
-                        btnSaveToDb.Enabled = true;
-
-                        //pictureBox1.Image = Image.FromFile(filename);
-
-                        /*
-                        picnumber++;
                         for (int i = 0; i < pics.Count; i++)
                         {
-                            
-                            IntPtr img = (IntPtr)pics[i];
-                        
-                            PicForm newpic = new PicForm(img);
-                            newpic.MdiParent = this;
-                            int picnum = i + 1;
-                            newpic.Text = "ScanPass" + picnumber.ToString() + "_Pic" + picnum.ToString();
-                            newpic.Show();
-                        
-                        }
-                        */
 
+                            dibhand = (IntPtr)pics[i];
+                            bmpptr = GlobalLock(dibhand);
+                            pixptr = GetPixelInfo(bmpptr);
+
+                            IntPtr img = IntPtr.Zero;
+                            Guid clsid;
+                            String filename = "temp" + i + ".png";
+
+                            if (!Gdip.GetCodecClsid(filename, out clsid))
+                            {
+                                return false;
+                            }
+
+                            int st = Gdip.GdipCreateBitmapFromGdiDib(bmpptr, pixptr, ref img);
+
+                            if ((st != 0) || (img == IntPtr.Zero))
+                            {
+                                return false;
+                            }
+
+                            st = Gdip.GdipSaveImageToFile(img, filename, ref clsid, IntPtr.Zero);
+                            Gdip.GdipDisposeImage(img);
+
+                            addImageToPicturebox(filename);
+                            actSaveToDb(null, null);
+                            btnSaveToDb.Enabled = true;
+                        }
                         break;
                     }
             }
-
             return true;
         }
 
@@ -459,7 +444,16 @@ namespace scaner
 
         private void tcImeges_SelectedIndexChanged(object sender, EventArgs e)
         {
-
+            /*
+            if(btnSaveToDb.Enabled==true)
+            {
+                DialogResult res = MessageBox.Show("Изображение не сохранено. Сохранить изображение?","Внимание", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+                if(res == DialogResult.Yes)
+                {
+                    actSaveToDb(null, null);
+                }
+            }
+            */
             btnSaveToDb.Enabled = false;
             btnDeleteImage.Enabled = true;
         }
