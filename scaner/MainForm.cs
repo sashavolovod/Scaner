@@ -40,7 +40,7 @@ namespace scaner
             tw = new Twain();
             tw.Init(this.Handle);
 
-            if (userName == @"win7x64\user" || userName == @"inc\volovod" || userName == @"inc\incmaster1" || userName == @"inc\astapuk" || userName == @"inc\grinchik" || userName == @"inc\inc-tech14")
+            if (userName == @"win7x64\user" || userName == @"inc\volovod" || userName == @"inc\master1" || userName == @"inc\incmasters" || userName == @"inc\astapuk" || userName == @"inc\grinchik" || userName == @"inc\inc-tech14")
                 btnPrint.Enabled = true;
             else
                 btnPrint.Enabled = false;
